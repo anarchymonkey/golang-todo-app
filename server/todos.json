@@ -1,0 +1,8 @@
+{
+    "todos": [{
+        "id": "aniket is awesome",
+        "name": "This is a test todo",
+        "isCompleted": false,
+        "isStriked": false
+    }]
+}
