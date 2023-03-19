@@ -1,0 +1,11 @@
+{
+    "defaultHeaders": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Accept": "*",
+        "Connection": "keep-alive",
+        "mode": "cors"
+    },
+    "url": {
+        "getTodos": "http://localhost:8080/todos"
+    }
+}

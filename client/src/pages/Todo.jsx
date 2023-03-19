@@ -1,9 +1,33 @@
+import { useEffect } from "react";
+import { useFetch } from "../hooks/useFetch";
+
+import * as config from '../config.json';
 
 
 const Todo = () => {
+    const {
+        get
+    } = useFetch();
+
+    const fetchData = async () => {
+        try {
+            const resp = await get(config.url.getTodos);
+            console.log("resp", resp);
+        } catch (err) {
+            console.log("The error is", err)
+        }
+    }
+
+
+    useEffect(() => {
+        fetchData()
+    }, []);
 
     return (
-        <div> This is a todo application, this is where the real fun starts</div>
+        <>
+            <div>Header</div>
+            <div>Subtitle</div>
+        </>
     )
 }
 
