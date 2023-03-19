@@ -1,8 +1,17 @@
+import { Card } from "../Shared";
+import TodoItem from "./TodoItem";
 
-
-const Todos = () => {
+const Todos = ({
+    data,
+}) => {
     return (
-        <div> This is th list of todos</div>
+        <Card>
+            {data.map((todo) => (
+                <div key={todo.id}>
+                    <TodoItem todoItem={todo} />
+                </div>
+            ))}
+        </Card>
     )
 }
 

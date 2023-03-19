@@ -1,0 +1,19 @@
+.container {
+    width: 450px;
+    height: 650px;
+    padding: 8px;
+     background: rgb(2, 0, 36);
+    position: relative;
+}
+
+.container::after {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 600px;
+    inset: 0.5em;
+    background: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(138, 193, 240, 1) 35%, rgba(0, 212, 255, 1) 100%);
+    filter: blur(2.5em);
+    z-index: -1;
+
+}

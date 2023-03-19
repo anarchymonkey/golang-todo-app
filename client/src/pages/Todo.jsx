@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFetch } from "../hooks/useFetch";
+import { Todos } from "../views/Todo";
 
 import * as config from '../config.json';
 
@@ -9,11 +10,14 @@ const Todo = () => {
         get
     } = useFetch();
 
+    const [todos, setTodos] = useState([]);
+
     const fetchData = async () => {
         try {
             const resp = await get(config.url.getTodos);
-            console.log("resp", resp);
+            setTodos(resp);
         } catch (err) {
+            setTodos([]);
             console.log("The error is", err)
         }
     }
@@ -27,6 +31,9 @@ const Todo = () => {
         <>
             <div>Header</div>
             <div>Subtitle</div>
+            <div style={{ display: 'flex', justifyContent: "center", alignItems: "center"}}>
+                <Todos data={todos} />
+            </div>
         </>
     )
 }
