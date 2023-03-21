@@ -1,12 +1,13 @@
-import { forwardRef, memo, useMemo } from "react";
+import { forwardRef, useContext, memo, useMemo, useState } from "react";
+import EditIcon from "../../../public/assets/editIcon.svg"
+import { default as consts } from './const.js';
+import * as config from '../../config.json';
+import { TodoContext } from "../../pages/Todo";
 
 
-// what debounce does
-// takes a function and a delay
-// calls the function after a delay, if the function is triggered again it starts the timer again
-const debounce = (callbackFunction, delay) => {
+import './styles.css';
+import { useFetch } from "../../hooks/useFetch";
 
-}
 const onChange = (event, setSelectedItems) => {
     const { id } = event.target;
     setSelectedItems((prevSet) => {
@@ -21,24 +22,67 @@ const onChange = (event, setSelectedItems) => {
     })
 }
 
-const TodoItem = forwardRef(({ todoItem, checked, setSelectedItems }, ref) => {    
+const TodoItem = forwardRef(({ todoItem, checked, setSelectedItems }, ref) => {
+    const { fetchData } = useContext(TodoContext);
+    const { put } = useFetch();
+    const [mode, setMode] = useState(consts.modes.DEFAULT);
+    const [currentContent, setCurrentContent] = useState(todoItem.name);
 
-    console.log({ checked });
+    const onTextContentChange = (event) => {
+        if (event.target) {
+            console.log(event);
+            const { value } = event.target;
+            setCurrentContent(value);
+        }
+    }
+
+
+    const getTodoListMode = useMemo(() => {
+        if (mode === consts.modes.UPDATE) {
+            return <input type="text" id="update-todo" value={currentContent} onChange={onTextContentChange} />
+        }
+        return currentContent;
+    }, [mode, currentContent]);
     
+
+    const onTodoUpdateCompletion = () => {
+        put(config.url.updateTodo, {
+            id: todoItem.id,
+            name: currentContent,
+            isComplete: false,
+            isStriked: false,
+        }).then(() => {
+            fetchData();
+            setMode(consts.modes.DEFAULT);
+        })
+    };
+
+
     return (
-        <div style={{
-            display: 'flex',
-            justifyContent: "flex-start",
-            alignItems: "center",
-            gap: "10px"
-        }}>
-            <input
-                type="checkbox"
-                ref={ref}
-                checked={checked}
-                id={todoItem.id}
-                onChange={(event) => onChange(event, setSelectedItems)} />
-            <span>{todoItem.name}</span>
+        <div className="todo-item">
+            <div className="todo-item-children left">
+                <input
+                    type="checkbox"
+                    ref={ref}
+                    checked={checked}
+                    id={todoItem.id}
+                    onChange={(event) => onChange(event, setSelectedItems)} />
+                <span>{getTodoListMode}</span>
+            </div>
+            <div className="todo-item-children right">
+                <span>
+                    {mode === consts.modes.UPDATE ? (
+                        <div onClick={onTodoUpdateCompletion}>Done</div>
+                    ) : (
+                        <EditIcon
+                            width={20}
+                            height={20}
+                            fill="white"
+                            onClick={() => setMode(consts.modes.UPDATE)}
+                        />
+                    )}
+                </span>
+            </div>
         </div>
     )
 });

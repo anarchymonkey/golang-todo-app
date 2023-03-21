@@ -54,11 +54,12 @@ export const useFetch = () => {
         if (!url) {
             throw new SyntaxError("Url is required but not given")
         }
+        console.log(params)
 
         return request(url, {
             ...options,
             method: 'PUT',
-            body: params,
+            body: JSON.stringify(params),
         })
     }
 

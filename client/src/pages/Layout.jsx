@@ -7,7 +7,6 @@ const Layout = ({
 
     return (
         <div>
-            <h3>This is the layout module</h3>
             {children}
         </div>
     )
