@@ -22,40 +22,27 @@ type SyncLocks struct {
 	currentId int
 }
 
-func (m *SyncLocks) generateRandomId() {
+func (m *SyncLocks) generateRandomId() int {
 	m.mu.Lock()
-	m.currentId = m.currentId + 1
-	m.mu.Unlock()
+	defer m.mu.Unlock()
+	m.currentId++
+	return m.currentId
 }
 
-var todos []Todo = []Todo{
-	Todo{
-		Id:         1,
-		Name:       "This is a test todo",
-		IsComplete: false,
-		IsStriked:  false,
-	},
-}
+var todos []Todo = []Todo{}
 
 func getTodos(c *gin.Context) {
-
-	fmt.Println("todos", todos)
-
 	c.IndentedJSON(http.StatusOK, todos)
 }
 
-// this is outside so that it keeps the context of random Id, I will replace it by postgres but for now I dont have the headache of generating ids anymore
-var newSyncLock SyncLocks = SyncLocks{
-	currentId: 2,
+var syncLock SyncLocks = SyncLocks{
+	currentId: 0,
 }
 
 func addTodo(c *gin.Context) {
-	// get the request and read it, add it to the todos array
-
-	go newSyncLock.generateRandomId()
 
 	var todo Todo = Todo{
-		Id:         newSyncLock.currentId,
+		Id:         syncLock.generateRandomId(),
 		IsStriked:  false,
 		IsComplete: false,
 	}
@@ -63,10 +50,9 @@ func addTodo(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "something went wrong"})
 		return
 	}
-
 	todos = append(todos, todo)
 
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "Successfully added a todo"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": todo})
 }
 
 func updateTodo(c *gin.Context) {

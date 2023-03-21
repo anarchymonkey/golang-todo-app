@@ -9,6 +9,7 @@ const Todo = () => {
     const {
         get,
         put,
+        post,
     } = useFetch();
 
     const [todos, setTodos] = useState([]);
@@ -24,7 +25,9 @@ const Todo = () => {
     }
 
     const addTodo = (todoItem) => {
-        console.log("Adding todos")
+        post(config.url.addTodo, {
+            name: todoItem.name,
+        }).then(() => getTodos()); 
     }
 
     const updateTodo = (id, todoItem) => {

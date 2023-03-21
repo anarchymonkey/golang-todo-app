@@ -2,29 +2,34 @@ import { useContext, useRef, useState } from "react";
 import { Card } from "../Shared";
 import TodoItem from "./TodoItem";
 
-import AddCircleIcon from "../../../public/assets/AddCircleIcon.svg";
-import { default as consts } from './const';
-
 import "./styles.css";
 import { TodoContext } from "../../pages/Todo";
 
 const Todos = () => {
-    const { todos } = useContext(TodoContext);
+    const { todos, addTodo } = useContext(TodoContext);
+    
     const checkboxRef = useRef(null);
+    const inputAddRef = useRef(null);
+
     const [selectedItems, setSelectedItems] = useState(new Set());
 
-    const onAddTodoClick = () => {
-        console.log("Add todo was clicked")
+    const onKeyPress = (event) => {
+        event.preventDefault();
+
+        if (event.which === 13 && event.code === "Enter") {
+            console.log(inputAddRef.current.value);
+            addTodo({
+                name: inputAddRef.current.value,
+            })
+
+            inputAddRef.current.value = '';
+        }
+
     }
 
     return (
         <Card>
-            <AddCircleIcon
-                width={50}
-                height={50}
-                id="add-icon"
-                onClick={onAddTodoClick}
-            />
+            <input type="text" ref={inputAddRef} onKeyUp={onKeyPress}/>
             {todos.map((todo) => (
                 <div key={todo.id}>
                     <TodoItem

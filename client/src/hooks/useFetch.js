@@ -45,7 +45,7 @@ export const useFetch = () => {
         return request(url, {
             ...options,
             method: 'POST',
-            body: params,
+            body: JSON.stringify(params),
         })
     }
 
