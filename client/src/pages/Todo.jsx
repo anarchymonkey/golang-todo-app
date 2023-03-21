@@ -7,12 +7,13 @@ import * as config from '../config.json';
 export const TodoContext = createContext();
 const Todo = () => {
     const {
-        get
+        get,
+        put,
     } = useFetch();
 
     const [todos, setTodos] = useState([]);
 
-    const fetchData = async () => {
+    const getTodos = async () => {
         try {
             const resp = await get(config.url.getTodos);
             setTodos(() => resp);
@@ -22,14 +23,29 @@ const Todo = () => {
         }
     }
 
+    const addTodo = (todoItem) => {
+        console.log("Adding todos")
+    }
+
+    const updateTodo = (id, todoItem) => {
+        put(config.url.updateTodo, {
+            id,
+            name: todoItem.name,
+            isComplete: todoItem.isComplete,
+            isStriked: todoItem.isStriked,
+        }).then(() => {
+            getTodos();
+        })
+    }
+
 
     useEffect(() => {
-        fetchData()
+        getTodos();
     }, []);
 
     return (
         <div style={{ display: 'flex', justifyContent: "center", alignItems: "center" }}>
-            <TodoContext.Provider value={{todos, setTodos, fetchData }}>
+            <TodoContext.Provider value={{todos, setTodos, getTodos, updateTodo, addTodo }}>
                 <Todos />
             </TodoContext.Provider>
         </div>

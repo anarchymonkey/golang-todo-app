@@ -23,7 +23,7 @@ const onChange = (event, setSelectedItems) => {
 }
 
 const TodoItem = forwardRef(({ todoItem, checked, setSelectedItems }, ref) => {
-    const { fetchData } = useContext(TodoContext);
+    const { updateTodo } = useContext(TodoContext);
     const { put } = useFetch();
     const [mode, setMode] = useState(consts.modes.DEFAULT);
     const [currentContent, setCurrentContent] = useState(todoItem.name);
@@ -46,15 +46,15 @@ const TodoItem = forwardRef(({ todoItem, checked, setSelectedItems }, ref) => {
     
 
     const onTodoUpdateCompletion = () => {
-        put(config.url.updateTodo, {
-            id: todoItem.id,
+        updateTodo(todoItem.id, {
             name: currentContent,
             isComplete: false,
             isStriked: false,
-        }).then(() => {
-            fetchData();
-            setMode(consts.modes.DEFAULT);
-        })
+        });
+
+        setMode(consts.modes.DEFAULT);
+
+        
     };
 
 
