@@ -31,7 +31,7 @@ func (m *SyncLocks) generateRandomId() int {
 
 var todos []Todo = []Todo{}
 
-func GetTodos(c *gin.Context, db *pgxpool.Pool) {
+func GetTodos(c *gin.Context, conn *pgxpool.Conn) {
 	c.IndentedJSON(http.StatusOK, todos)
 }
 
@@ -43,8 +43,7 @@ func abortWithMessage[T any](c *gin.Context, message T) {
 	c.AbortWithStatusJSON(http.StatusBadRequest, message)
 }
 
-func AddTodo(c *gin.Context, db *pgxpool.Pool) {
-
+func AddTodo(c *gin.Context, conn *pgxpool.Conn) {
 	var todo Todo = Todo{
 		Id:         syncLock.generateRandomId(),
 		IsStriked:  false,
@@ -60,7 +59,7 @@ func AddTodo(c *gin.Context, db *pgxpool.Pool) {
 	c.IndentedJSON(http.StatusOK, gin.H{"message": todo})
 }
 
-func UpdateTodo(c *gin.Context, db *pgxpool.Pool) {
+func UpdateTodo(c *gin.Context, conn *pgxpool.Conn) {
 	var todo Todo = Todo{}
 
 	if err := c.BindJSON(&todo); err != nil {

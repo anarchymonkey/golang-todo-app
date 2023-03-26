@@ -51,3 +51,13 @@ func (dbConfig *DbConfig) GetDbConnectionPool() (*pgxpool.Pool, error) {
 
 	return conn, nil
 }
+
+// this is used to aquire a connection from the pool
+func AcquireConnectionFromPool(pool *pgxpool.Pool) (*pgxpool.Conn, error) {
+	conn, err := pool.Acquire(context.Background())
+
+	if err != nil {
+		return nil, fmt.Errorf("error while creating a connection from the pool")
+	}
+	return conn, nil
+}

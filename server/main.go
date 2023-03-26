@@ -17,9 +17,19 @@ type Env struct {
 	dbPool *pgxpool.Pool
 }
 
-func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Pool), env *Env) gin.HandlerFunc {
+func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Conn), env *Env) gin.HandlerFunc {
+	// get connection from connection pool
+	conn, err := db.AcquireConnectionFromPool(env.dbPool)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// release the connection when it's done so that it can be aquired by someone else
+	defer conn.Release()
+
 	return func(ctx *gin.Context) {
-		fn(ctx, env.dbPool)
+		fn(ctx, conn)
 	}
 }
 
