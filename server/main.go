@@ -2,105 +2,58 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 
-	"sync"
+	"github.com/anarchymonkey/golang-todo-server/db"
+	"github.com/anarchymonkey/golang-todo-server/services"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/gin-gonic/gin"
-	s "golang.org/x/exp/slices"
 )
 
-type Todo struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name"`
-	IsComplete bool   `json:"isComplete"`
-	IsStriked  bool   `json:"isStriked"`
+type Env struct {
+	dbPool *pgxpool.Pool
 }
 
-type SyncLocks struct {
-	mu        sync.Mutex
-	currentId int
-}
-
-func (m *SyncLocks) generateRandomId() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.currentId++
-	return m.currentId
-}
-
-var todos []Todo = []Todo{}
-
-func getTodos(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, todos)
-}
-
-var syncLock SyncLocks = SyncLocks{
-	currentId: 0,
-}
-
-func addTodo(c *gin.Context) {
-
-	var todo Todo = Todo{
-		Id:         syncLock.generateRandomId(),
-		IsStriked:  false,
-		IsComplete: false,
+func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Pool), env *Env) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		fn(ctx, env.dbPool)
 	}
-	if err := c.BindJSON(&todo); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "something went wrong"})
-		return
-	}
-	todos = append(todos, todo)
-
-	c.IndentedJSON(http.StatusOK, gin.H{"message": todo})
-}
-
-func updateTodo(c *gin.Context) {
-	var todo Todo = Todo{}
-
-	if err := c.BindJSON(&todo); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Wrong id provided or the request id sucks"})
-		return
-	}
-
-	found := s.IndexFunc(todos, func(t Todo) bool {
-		return t.Id == todo.Id
-	})
-
-	fmt.Println("The id found is", found)
-	if found != -1 {
-
-		for idx, _ := range todos {
-			if idx == found {
-				todos = s.Replace(todos, idx, idx+1, todo)
-				break
-			}
-		}
-		c.IndentedJSON(http.StatusOK, gin.H{
-			"message": "Found this shit",
-		})
-		return
-	}
-
-	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-		"message": todos,
-	})
-
 }
 
 func main() {
 
 	fmt.Println("Welcome to the todo web application")
 
+	var dbConfig db.DbConfig = db.DbConfig{
+		Username: os.Getenv("PG_USERNAME_V1"),
+		Password: os.Getenv("PG_PASS_V1"),
+		DbName:   "postgres",
+		PORT:     5432,
+	}
+
+	// use the connection pool to pass it through a handler
+	dbConnPool, err := dbConfig.GetDbConnectionPool()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dbConnPool.Close()
+
+	var env *Env = &Env{
+		dbPool: dbConnPool,
+	}
+
 	router := gin.Default()
 
 	router.Use(corsMiddleware())
 
-	router.GET("/todos", getTodos)
-	router.POST("/todo/add", addTodo)
-	router.PUT("/todo/update", updateTodo)
+	router.GET("/todos", getHandlerWithBindedEnvironment(services.GetTodos, env))
+	router.POST("/todo/add", getHandlerWithBindedEnvironment(services.AddTodo, env))
+	router.PUT("/todo/update", getHandlerWithBindedEnvironment(services.UpdateTodo, env))
 
-	// similar to http.ListenAndServe()
 	router.Run(":8080")
 
 }
