@@ -1,6 +1,17 @@
 
 # Database Queries
 
+### Gist
+
+* Create a new group in the groups table by inserting a new row with a unique ID, a title, and optionally a description, using the CREATE statement for the groups table.
+* Add items to the items table by inserting a new row with a unique ID, content, and optionally a remind_at value, using the CREATE statement for the items table.
+* Associate an item with a group by inserting a new row into the grouped_items table with the IDs of the group and item that you want to link.
+* Create content in the contents table by inserting a new row with a unique ID and the text content, using the CREATE statement for the contents table.
+* Associate content with an item by inserting a new row into the item_contents table with the IDs of the item and content that you want to link.
+* Update the groups table's updated_at field or the items table's updated_at field using a trigger, which will automatically update the timestamp when a record is modified in the table.
+
+This workflow allows you to create and link items, groups, and content together, providing a flexible system for organizing and managing data.
+
 * Steps
   * Create the database (Note: I am using postgresql so the commands might differ)
   
@@ -61,8 +72,8 @@
             id SERIAL PRIMARY KEY,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-        )
+            updated_at TIMESTAMP DEFAULT NOW()
+        );
 
     // This is for the ItemContents table
 
@@ -72,7 +83,7 @@
             content_id INTEGER REFERENCES contents(id),
             created_at TIMESTAMP DEFAULT NOW(),
             is_active BOOLEAN DEFAULT true
-        )
+        );
     ```
 
   * Add the triggers

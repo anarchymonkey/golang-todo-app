@@ -20,13 +20,11 @@ type Env struct {
 func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Conn), env *Env) gin.HandlerFunc {
 	// get connection from connection pool
 	conn, err := db.AcquireConnectionFromPool(env.dbPool)
+	fmt.Println("Here", conn)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// release the connection when it's done so that it can be aquired by someone else
-	defer conn.Release()
 
 	return func(ctx *gin.Context) {
 		fn(ctx, conn)
@@ -40,7 +38,7 @@ func main() {
 	var dbConfig db.DbConfig = db.DbConfig{
 		Username: os.Getenv("PG_USERNAME_V1"),
 		Password: os.Getenv("PG_PASS_V1"),
-		DbName:   "postgres",
+		DbName:   "todo_app",
 		PORT:     5432,
 	}
 
