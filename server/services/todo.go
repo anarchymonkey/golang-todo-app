@@ -1,90 +1,75 @@
 package services
 
 import (
+	"fmt"
 	"net/http"
-
-	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
-	s "golang.org/x/exp/slices"
 )
 
-type Todo struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name"`
-	IsComplete bool   `json:"isComplete"`
-	IsStriked  bool   `json:"isStriked"`
+// List of groups present todo_app.groups
+type Groups struct {
+	Id          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+	isActive    bool   `json:"is_active"`
+	isPublic    bool   `json:"is_public"`
 }
 
-type SyncLocks struct {
-	mu        sync.Mutex
-	currentId int
+// resembles todo_app.items
+type Item struct {
+	Id        int    `json:"id"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+	RemindAt  string `json:"remind_at"`
+	isActive  bool   `json:"is_active"`
 }
 
-func (m *SyncLocks) generateRandomId() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.currentId++
-	return m.currentId
-}
-
-var todos []Todo = []Todo{}
-
-func GetTodos(c *gin.Context, conn *pgxpool.Conn) {
-	c.IndentedJSON(http.StatusOK, todos)
-}
-
-var syncLock SyncLocks = SyncLocks{
-	currentId: 0,
+type GroupedItems struct {
+	Id        int    `json:"id"`
+	GroupId   int    `json:"group_id"`
+	ItemId    int    `json:"item_id"`
+	CreatedAt string `json:"created_at"`
+	IsActive  bool   `json:"is_active"`
 }
 
 func abortWithMessage[T any](c *gin.Context, message T) {
 	c.AbortWithStatusJSON(http.StatusBadRequest, message)
 }
 
-func AddTodo(c *gin.Context, conn *pgxpool.Conn) {
-	var todo Todo = Todo{
-		Id:         syncLock.generateRandomId(),
-		IsStriked:  false,
-		IsComplete: false,
-	}
+func GetGroups(c *gin.Context, conn *pgxpool.Conn) {
 
-	if err := c.BindJSON(&todo); err != nil {
-		abortWithMessage(c, "Error while fetching the request body")
-		return
-	}
-
-	todos = append(todos, todo)
-	c.IndentedJSON(http.StatusOK, gin.H{"message": todo})
 }
 
-func UpdateTodo(c *gin.Context, conn *pgxpool.Conn) {
-	var todo Todo = Todo{}
+func AddGroup(c *gin.Context, conn *pgxpool.Conn) {
 
-	if err := c.BindJSON(&todo); err != nil {
-		abortWithMessage(c, "Error while updating the todo or Id is wrong")
-		return
+}
+
+func UpdateGroupById(c *gin.Context, conn *pgxpool.Conn) {
+
+}
+
+// get items in group
+func GetItemsInGroup(c *gin.Context, conn *pgxpool.Conn) {
+	requestBody, ok := c.Params.Get("id")
+
+	fmt.Println("Request body", requestBody)
+
+	if !ok {
+		abortWithMessage(c, "error while parsing the request body")
 	}
+}
 
-	found := s.IndexFunc(todos, func(t Todo) bool {
-		return t.Id == todo.Id
-	})
+// Add the item listing to group
+func AddItemToGroup(c *gin.Context, conn *pgxpool.Conn) {
 
-	if found != -1 {
+}
 
-		for idx, _ := range todos {
-			if idx == found {
-				todos = s.Replace(todos, idx, idx+1, todo)
-				break
-			}
-		}
-		c.IndentedJSON(http.StatusOK, gin.H{
-			"message": "Found this shit",
-		})
-		return
-	}
-
-	abortWithMessage(c, todo)
+// Update the item listing to group
+func UpdateItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
 
 }

@@ -60,9 +60,12 @@ func main() {
 
 	router.Use(corsMiddleware())
 
-	router.GET("/todos", getHandlerWithBindedEnvironment(services.GetTodos, env))
-	router.POST("/todo/add", getHandlerWithBindedEnvironment(services.AddTodo, env))
-	router.PUT("/todo/update", getHandlerWithBindedEnvironment(services.UpdateTodo, env))
+	router.GET("/groups", getHandlerWithBindedEnvironment(services.GetGroups, env))
+	router.POST("/group/add", getHandlerWithBindedEnvironment(services.AddGroup, env))
+	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
+	router.GET("/group/:id/items", getHandlerWithBindedEnvironment(services.GetItemsInGroup, env))
+	router.POST("item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
+	router.PUT("/item/:id/update", getHandlerWithBindedEnvironment(services.UpdateItemInGroup, env))
 
 	router.Run(":8080")
 
