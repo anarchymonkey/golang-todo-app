@@ -84,6 +84,10 @@ This workflow allows you to create and link items, groups, and content together,
             created_at TIMESTAMP DEFAULT NOW(),
             is_active BOOLEAN DEFAULT true
         );
+
+    // Indexes that are to be created
+
+        CREATE INDEX idx_groupid_itemid on grouped_items(group_id, item_id);
     ```
 
   * Add the triggers

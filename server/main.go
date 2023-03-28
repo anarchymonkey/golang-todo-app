@@ -18,15 +18,16 @@ type Env struct {
 }
 
 func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Conn), env *Env) gin.HandlerFunc {
-	// get connection from connection pool
-	conn, err := db.AcquireConnectionFromPool(env.dbPool)
-	fmt.Println("Here", conn)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return func(ctx *gin.Context) {
+
+		conn, err := db.AcquireConnectionFromPool(env.dbPool)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer conn.Release()
+
 		fn(ctx, conn)
 	}
 }
@@ -62,7 +63,7 @@ func main() {
 	router.POST("/group/add", getHandlerWithBindedEnvironment(services.AddGroup, env))
 	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
 	router.GET("/group/:id/items", getHandlerWithBindedEnvironment(services.GetItemsInGroup, env))
-	router.POST("item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
+	router.POST("/group/:id/item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
 	router.PUT("/item/:id/update", getHandlerWithBindedEnvironment(services.UpdateItemInGroup, env))
 
 	router.Run(":8080")
