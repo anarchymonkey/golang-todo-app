@@ -23,12 +23,12 @@ type Group struct {
 
 // resembles todo_app.items
 type Item struct {
-	Id        int       `json:"id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	RemindAt  string    `json:"remind_at"`
-	IsActive  bool      `json:"is_active"`
+	Id        int        `json:"id"`
+	Content   string     `json:"content"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	RemindAt  *time.Time `json:"remind_at"`
+	IsActive  bool       `json:"is_active"`
 }
 
 type GroupedItem struct {
@@ -52,6 +52,7 @@ func GetGroups(c *gin.Context, conn *pgxpool.Conn) {
 		abortWithMessage(c, "error fetching rows from query")
 		return
 	}
+	defer rows.Close()
 
 	var groups []Group = []Group{}
 
@@ -123,26 +124,67 @@ func UpdateGroupById(c *gin.Context, conn *pgxpool.Conn) {
 
 // get items in group
 func GetItemsInGroup(c *gin.Context, conn *pgxpool.Conn) {
-	// group_id, ok := c.Params.Get("id")
+	groupId, ok := c.Params.Get("id")
 
-	// fmt.Println("Request body", group_id)
+	if !ok {
+		abortWithMessage(c, fmt.Sprintf("error while getting the request params"))
+		return
+	}
 
-	// if !ok {
-	// 	abortWithMessage(c, "error while parsing the request body")
-	// 	return
-	// }
+	/*
+		Analysis
 
-	// rows, err := conn.Query(context.Background(), "SELECT g.*, gi.* from grouped_items gi join groups g on g.id = gi.group_id where gi.group_id=$1", group_id)
 
-	// if err != nil {
-	// 	abortWithMessage(c, fmt.Sprintf("error while running select query %v", err))
-	// 	return
-	// }
+					 Sort  (cost=17.48..17.48 rows=1 width=61) (actual time=0.063..0.064 rows=7 loops=1)
+		   Sort Key: i.created_at
+		   Sort Method: quicksort  Memory: 25kB
+		   ->  Nested Loop  (cost=0.30..17.47 rows=1 width=61) (actual time=0.037..0.055 rows=7 loops=1)
+		         ->  Nested Loop  (cost=0.15..9.27 rows=1 width=4) (actual time=0.028..0.038 rows=7 loops=1)
+		               ->  Seq Scan on grouped_items gi  (cost=0.00..1.09 rows=1 width=8) (actual time=0.018..0.019 rows=7 loops=1)
+		                     Filter: (is_active AND (group_id = 1))
+		               ->  Index Scan using groups_pkey on groups g  (cost=0.15..8.17 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=7)
+		                     Index Cond: (id = 1)
+		                     Filter: is_active
+		         ->  Index Scan using items_pkey on items i  (cost=0.15..8.17 rows=1 width=61) (actual time=0.002..0.002 rows=1 loops=7)
+		               Index Cond: (id = gi.item_id)
+		               Filter: is_active
+		 Planning Time: 0.247 ms
+		 Execution Time: 0.102 ms
+		(15 rows)
 
-	// for rows.Next() {
-	// 	err := rows.Values()
-	// }
+	*/
 
+	rows, err := conn.Query(context.Background(), `
+	SELECT i.*
+	FROM grouped_items gi 
+	JOIN groups g on g.id = gi.group_id 
+	JOIN items i on i.id = gi.item_id 
+	WHERE gi.group_id=$1 AND gi.is_active = true AND g.is_active=true AND i.is_active=true 
+	ORDER BY i.created_at ASC NULLS LAST;`, groupId)
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while querying the table: %v", err))
+		return
+	}
+	defer rows.Close()
+
+	var items []Item
+
+	for rows.Next() {
+		var item Item
+		var remindAt *time.Time
+		err := rows.Scan(&item.Id, &item.Content, &item.IsActive, &item.CreatedAt, &item.UpdatedAt, &remindAt)
+
+		if err != nil {
+			abortWithMessage(c, fmt.Sprintf("error while scanning rows, %v", err))
+			return
+		}
+
+		item.RemindAt = remindAt
+		items = append(items, item)
+	}
+
+	c.JSON(http.StatusOK, items)
 }
 
 // Add the item listing to group
