@@ -39,6 +39,21 @@ type GroupedItem struct {
 	IsActive  bool      `json:"is_active"`
 }
 
+type Content struct {
+	Id        string    `json:"id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	Updatedat time.Time `json:"updated_at"`
+}
+
+type itemContents struct {
+	Id        string    `json:"id"`
+	ItemId    string    `json:"item_id"`
+	ContentId string    `json:"content_id"`
+	CreatedAt time.Time `json:"created_at"`
+	IsActive  bool      `json:"is_active"`
+}
+
 func abortWithMessage[T any](c *gin.Context, message T) {
 	c.AbortWithStatusJSON(http.StatusBadRequest, message)
 }
@@ -350,11 +365,105 @@ func DeleteItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
 }
 
 func GetContentsInItems(c *gin.Context, conn *pgxpool.Conn) {
+	itemId, ok := c.Params.Get("itemId")
 
+	if !ok {
+		abortWithMessage(c, "error reading item_id from query params")
+		return
+	}
+
+	rows, err := conn.Query(context.Background(), `
+	SELECT ic.*, i.* 
+	FROM item_contents ic 
+	JOIN items i on i.id = ic.item_id
+	JOIN contents c on c.id = ic.content_id
+	WHERE i.id=$1 AND ic.is_active=true AND i.is_active=true AND c.is_active=true`, itemId)
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while running select query: ", err))
+		return
+	}
+
+	var contents []Content
+	for rows.Next() {
+		var content Content
+
+		err := rows.Scan(&content.Id, &content.Content, &content.CreatedAt, &content.Updatedat)
+
+		if err != nil {
+			abortWithMessage(c, fmt.Sprintf("error while scanning the rows %v", err))
+			return
+		}
+		contents = append(contents, content)
+	}
+
+	c.JSON(http.StatusOK, contents)
 }
 
 func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
+	const NoRowsAffected = 0
+	// get the item id in params
+	// this will be a transactional query, when we are adding content then we should add it in the items table too
+	itemId, ok := c.Params.Get("id")
 
+	if !ok {
+		abortWithMessage(c, "error while getting the itemId from params")
+		return
+	}
+	var content Content
+
+	if err := c.Bind(&content); err != nil {
+		abortWithMessage(c, fmt.Sprintf("error wile binding the request params with the content pointer %v", err))
+		return
+	}
+
+	tran, err := conn.Begin(context.Background())
+
+	if err != nil {
+		// rollback the transcation if any error occours
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while opening a transaction %v", err))
+		return
+	}
+
+	// this will be the returning id from the query
+	// use this id to insert into the item_contents table
+	var contentId string
+	err = conn.QueryRow(context.Background(), "INSERT INTO content(content) VALUES($1) RETURNING id", content.Content).Scan(&contentId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while running the query row %v", err))
+		return
+	}
+
+	row, err := tran.Exec(context.Background(), "INSERT INTO item_contents(item_id, content_id) VALUES($1, $2)", &itemId, &contentId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while inserting the item keys into the item_contents table %v", err))
+		return
+	}
+
+	err = tran.Commit(context.Background())
+
+	if err != nil {
+		defer tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while committing the transaction %v", err))
+		return
+	}
+
+	// should I rollback if there are no rows inserted, what cases can be there?
+	if row.RowsAffected() == NoRowsAffected {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No rows inserted",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "content added successfully!",
+	})
 }
 
 func UpdateContentInItem(c *gin.Context, conn *pgxpool.Conn) {
