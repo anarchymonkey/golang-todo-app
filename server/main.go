@@ -75,7 +75,7 @@ func main() {
 	// PUT
 	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
 	router.PUT("/item/:id/update", getHandlerWithBindedEnvironment(services.UpdateItemInGroup, env))
-	router.PUT("/item/:id/content/update", getHandlerWithBindedEnvironment(services.UpdateContentInItem, env))
+	router.PUT("/content/:content_id/update", getHandlerWithBindedEnvironment(services.UpdateContentInItem, env))
 
 	// DELETE
 
@@ -83,7 +83,7 @@ func main() {
 
 	router.DELETE("/group/:id/delete", getHandlerWithBindedEnvironment(services.DeleteGroupById, env))
 	router.DELETE("/group/:id/item/:item_id/delete", getHandlerWithBindedEnvironment(services.DeleteItemInGroup, env))
-	router.DELETE("/item/:item_id/content/:content_id/delete", getHandlerWithBindedEnvironment(services.DeleteContentInItem, env))
+	router.DELETE("/item/:id/content/:content_id/delete", getHandlerWithBindedEnvironment(services.DeleteContentInItem, env))
 
 	// run the server
 	router.Run(fmt.Sprintf(":%d", PORT))

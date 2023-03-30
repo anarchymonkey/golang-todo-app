@@ -467,9 +467,84 @@ func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 }
 
 func UpdateContentInItem(c *gin.Context, conn *pgxpool.Conn) {
+	contentId, contentIdPresent := c.Params.Get("content_id")
 
+	if !contentIdPresent {
+		abortWithMessage(c, "request params not present or nil")
+		return
+	}
+
+	var content Content
+
+	if err := c.Bind(&content); err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while binding the content with reqeust body %v", err))
+		return
+	}
+
+	row, err := conn.Exec(context.Background(), "UPDATE contents set(content)=($2) WHERE id=$1", contentId, content.Content)
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while updating the content %v", err))
+		return
+	}
+
+	if row.RowsAffected() == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "no rows updated",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, "successfully updated the content")
 }
 
 func DeleteContentInItem(c *gin.Context, conn *pgxpool.Conn) {
+	itemId, itemIdPresent := c.Params.Get("id")
+	contentId, contentIdPresent := c.Params.Get("content_id")
 
+	if !itemIdPresent || !contentIdPresent {
+		abortWithMessage(c, "contentId not found in param, marked as required")
+		return
+	}
+
+	tran, err := conn.Begin(context.Background())
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error starting transaction %v", err))
+		return
+	}
+
+	itemContentRows, err := tran.Exec(context.Background(), "DELETE from item_contents where item_id=$1 AND content_id=$2", itemId, contentId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting item rows %v", err))
+		return
+	}
+
+	row, err := tran.Exec(context.Background(), "DELETE FROM content WHERE content_id=$1", contentId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting item rows %v", err))
+		return
+	}
+
+	err = tran.Commit(context.Background())
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while commiting updates %v", err))
+		return
+	}
+
+	if itemContentRows.RowsAffected() == 0 || row.RowsAffected() == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "rows are not affected",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "rows deleted successfully",
+	})
 }
