@@ -122,6 +122,35 @@ func UpdateGroupById(c *gin.Context, conn *pgxpool.Conn) {
 	c.JSON(http.StatusOK, fmt.Sprintf("Data has been updated! affected rows = %d", updatedRow.RowsAffected()))
 }
 
+func DeleteGroupById(c *gin.Context, conn *pgxpool.Conn) {
+
+	// does not need group id, item id would suffice
+
+	idToDelete, ok := c.Params.Get("id")
+
+	if !ok {
+		abortWithMessage(c, "item id is required but not present!")
+		return
+	}
+
+	row, err := conn.Exec(context.Background(), "DELETE from groups where id=$1", idToDelete)
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while running the delete query %v", err))
+	}
+
+	if row.RowsAffected() == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Cannot be deleted at the moment!",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "The group has been deleted",
+	})
+}
+
 // get items in group
 func GetItemsInGroup(c *gin.Context, conn *pgxpool.Conn) {
 	groupId, ok := c.Params.Get("id")
@@ -237,5 +266,101 @@ func AddItemToGroup(c *gin.Context, conn *pgxpool.Conn) {
 
 // Update the item listing to group
 func UpdateItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
+	// does not need group id, item id would suffice
+
+	idToUpdate, ok := c.Params.Get("id")
+
+	if !ok {
+		abortWithMessage(c, "item id is required but not present!")
+		return
+	}
+
+	var item Item
+
+	if err := c.BindJSON(&item); err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while reading the request body %v", err))
+		return
+	}
+
+	row, err := conn.Exec(context.Background(), "UPDATE items SET (content, is_active, remind_at) = ($2, $3, $4) where id=$1", idToUpdate, item.Content, item.IsActive, item.RemindAt)
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while running the update query %v", err))
+	}
+
+	if row.RowsAffected() == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Cannot be updated at the moment!",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "updated successfully!",
+	})
+}
+
+func DeleteItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
+	groupId, groupIdPresent := c.Params.Get("id")
+	itemId, itemIdPresent := c.Params.Get("item_id")
+
+	if !groupIdPresent || !itemIdPresent {
+		abortWithMessage(c, "error getting params, or params not present")
+		return
+	}
+
+	// This should be a transaction as grouped_items also need to be set is_active = false
+
+	tran, err := conn.Begin(context.Background())
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while starting a transaction, %v", err))
+		return
+	}
+
+	groupedItemRowDetails, err := tran.Exec(context.Background(), "DELETE from grouped_items where group_id=$1 AND item_id=$2", groupId, itemId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while running a delete query on grouped_items: id %s, with err %v", itemId, err))
+		return
+	}
+
+	itemRowDetails, err := conn.Exec(context.Background(), "DELETE FROM items where id=$1", itemId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while running a delete query on item id %s, with err %v", itemId, err))
+		return
+	}
+
+	fmt.Println("rows affected", itemRowDetails.RowsAffected(), groupedItemRowDetails.RowsAffected())
+
+	err = tran.Commit(context.Background())
+
+	if err != nil {
+		abortWithMessage(c, fmt.Sprintf("error while commiting the transaction %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "data deleted successfully",
+	})
+
+}
+
+func GetContentsInItems(c *gin.Context, conn *pgxpool.Conn) {
+
+}
+
+func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
+
+}
+
+func UpdateContentInItem(c *gin.Context, conn *pgxpool.Conn) {
+
+}
+
+func DeleteContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 
 }

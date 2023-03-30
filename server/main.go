@@ -33,6 +33,7 @@ func getHandlerWithBindedEnvironment(fn func(*gin.Context, *pgxpool.Conn), env *
 }
 
 func main() {
+	const PORT = 8080
 
 	fmt.Println("Welcome to the todo web application")
 
@@ -59,14 +60,33 @@ func main() {
 
 	router.Use(corsMiddleware())
 
-	router.GET("/groups", getHandlerWithBindedEnvironment(services.GetGroups, env))
-	router.POST("/group/add", getHandlerWithBindedEnvironment(services.AddGroup, env))
-	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
-	router.GET("/group/:id/items", getHandlerWithBindedEnvironment(services.GetItemsInGroup, env))
-	router.POST("/group/:id/item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
-	router.PUT("/item/:id/update", getHandlerWithBindedEnvironment(services.UpdateItemInGroup, env))
+	// can refactor with router.group later on
 
-	router.Run(":8080")
+	// GET
+	router.GET("/groups", getHandlerWithBindedEnvironment(services.GetGroups, env))
+	router.GET("/group/:id/items", getHandlerWithBindedEnvironment(services.GetItemsInGroup, env))
+	router.GET("/item/:id/contents", getHandlerWithBindedEnvironment(services.GetContentsInItems, env))
+
+	// POST
+	router.POST("/group/add", getHandlerWithBindedEnvironment(services.AddGroup, env))
+	router.POST("/group/:id/item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
+	router.POST("/item/:id/content/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
+
+	// PUT
+	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
+	router.PUT("/item/:id/update", getHandlerWithBindedEnvironment(services.UpdateItemInGroup, env))
+	router.PUT("/item/:id/content/update", getHandlerWithBindedEnvironment(services.UpdateContentInItem, env))
+
+	// DELETE
+
+	// This needs the group id and item_id respectively cause we want to delete the row from the mapping table also
+
+	router.DELETE("/group/:id/delete", getHandlerWithBindedEnvironment(services.DeleteGroupById, env))
+	router.DELETE("/group/:id/item/:item_id/delete", getHandlerWithBindedEnvironment(services.DeleteItemInGroup, env))
+	router.DELETE("/item/:item_id/content/:content_id/delete", getHandlerWithBindedEnvironment(services.DeleteContentInItem, env))
+
+	// run the server
+	router.Run(fmt.Sprintf(":%d", PORT))
 
 }
 
