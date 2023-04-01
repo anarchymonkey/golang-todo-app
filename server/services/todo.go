@@ -46,12 +46,10 @@ type Content struct {
 	Updatedat time.Time `json:"updated_at"`
 }
 
-type itemContents struct {
-	Id        string    `json:"id"`
-	ItemId    string    `json:"item_id"`
-	ContentId string    `json:"content_id"`
-	CreatedAt time.Time `json:"created_at"`
-	IsActive  bool      `json:"is_active"`
+type ItemContentResponse struct {
+	ItemId  int    `json:"item_id"`
+	Id      int    `json:"id"`
+	Content string `json:"content"`
 }
 
 func abortWithMessage[T any](c *gin.Context, message T) {
@@ -365,7 +363,7 @@ func DeleteItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
 }
 
 func GetContentsInItems(c *gin.Context, conn *pgxpool.Conn) {
-	itemId, ok := c.Params.Get("itemId")
+	itemId, ok := c.Params.Get("id")
 
 	if !ok {
 		abortWithMessage(c, "error reading item_id from query params")
@@ -373,31 +371,31 @@ func GetContentsInItems(c *gin.Context, conn *pgxpool.Conn) {
 	}
 
 	rows, err := conn.Query(context.Background(), `
-	SELECT ic.*, i.* 
+	SELECT i.id item_id, c.id, c.content 
 	FROM item_contents ic 
 	JOIN items i on i.id = ic.item_id
 	JOIN contents c on c.id = ic.content_id
-	WHERE i.id=$1 AND ic.is_active=true AND i.is_active=true AND c.is_active=true`, itemId)
+	WHERE i.id=$1 AND ic.is_active=true AND i.is_active=true`, itemId)
 
 	if err != nil {
 		abortWithMessage(c, fmt.Sprintf("error while running select query: ", err))
 		return
 	}
 
-	var contents []Content
+	var itemContents []ItemContentResponse
 	for rows.Next() {
-		var content Content
+		var itemContent ItemContentResponse
 
-		err := rows.Scan(&content.Id, &content.Content, &content.CreatedAt, &content.Updatedat)
+		err := rows.Scan(&itemContent.ItemId, &itemContent.Id, &itemContent.Content)
 
 		if err != nil {
 			abortWithMessage(c, fmt.Sprintf("error while scanning the rows %v", err))
 			return
 		}
-		contents = append(contents, content)
+		itemContents = append(itemContents, itemContent)
 	}
 
-	c.JSON(http.StatusOK, contents)
+	c.JSON(http.StatusOK, itemContents)
 }
 
 func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
@@ -428,8 +426,8 @@ func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 
 	// this will be the returning id from the query
 	// use this id to insert into the item_contents table
-	var contentId string
-	err = conn.QueryRow(context.Background(), "INSERT INTO content(content) VALUES($1) RETURNING id", content.Content).Scan(&contentId)
+	var contentId int
+	err = conn.QueryRow(context.Background(), "INSERT INTO contents(content) VALUES($1) RETURNING id", content.Content).Scan(&contentId)
 
 	if err != nil {
 		tran.Rollback(context.Background())
@@ -437,7 +435,7 @@ func AddContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 		return
 	}
 
-	row, err := tran.Exec(context.Background(), "INSERT INTO item_contents(item_id, content_id) VALUES($1, $2)", &itemId, &contentId)
+	row, err := tran.Exec(context.Background(), "INSERT INTO item_contents(item_id, content_id) VALUES($1, $2)", itemId, contentId)
 
 	if err != nil {
 		tran.Rollback(context.Background())
@@ -481,7 +479,7 @@ func UpdateContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 		return
 	}
 
-	row, err := conn.Exec(context.Background(), "UPDATE contents set(content)=($2) WHERE id=$1", contentId, content.Content)
+	row, err := conn.Exec(context.Background(), "UPDATE contents SET content=$2 WHERE id=$1", contentId, content.Content)
 
 	if err != nil {
 		abortWithMessage(c, fmt.Sprintf("error while updating the content %v", err))
@@ -522,7 +520,7 @@ func DeleteContentInItem(c *gin.Context, conn *pgxpool.Conn) {
 		return
 	}
 
-	row, err := tran.Exec(context.Background(), "DELETE FROM content WHERE content_id=$1", contentId)
+	row, err := tran.Exec(context.Background(), "DELETE FROM contents WHERE id=$1", contentId)
 
 	if err != nil {
 		tran.Rollback(context.Background())

@@ -70,7 +70,7 @@ func main() {
 	// POST
 	router.POST("/group/add", getHandlerWithBindedEnvironment(services.AddGroup, env))
 	router.POST("/group/:id/item/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
-	router.POST("/item/:id/content/add", getHandlerWithBindedEnvironment(services.AddItemToGroup, env))
+	router.POST("/item/:id/content/add", getHandlerWithBindedEnvironment(services.AddContentInItem, env))
 
 	// PUT
 	router.PUT("/group/:id/update", getHandlerWithBindedEnvironment(services.UpdateGroupById, env))
