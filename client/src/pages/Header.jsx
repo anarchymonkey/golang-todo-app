@@ -1,22 +1,22 @@
-
+import React from "react"
 
 const Header = () => {
 
-    const goToPage = (pathName) => {
-        console.log("Going to page", pathName)
-    }
+	const goToPage = (pathName) => {
+		console.log("Going to page", pathName)
+	}
 
-    return (
-        <div className="main">
-            <div className="left">
+	return (
+		<div className="main">
+			<div className="left">
                 Daily Shenanigans
-            </div>
-            <div className="right">
-                <div onClick={() => goToPage('/collections')}>Collections</div>
-                <div onClick={() => goToPage('/about')}>About</div>
-            </div>
-        </div>
-    )
+			</div>
+			<div className="right">
+				<div onClick={() => goToPage("/collections")}>Collections</div>
+				<div onClick={() => goToPage("/about")}>About</div>
+			</div>
+		</div>
+	)
 }
 
-export default Header;
+export default Header

@@ -1,58 +1,58 @@
-import { createContext, useEffect, useMemo, useState } from "react";
-import { useFetch } from "../hooks/useFetch";
-import { Todos } from "../views/Todo";
+import React, { createContext, useEffect, useState } from "react"
+import { useFetch } from "../hooks"
+import { Todos } from "../views/Todo"
 
-import * as config from '../config.json';
+import * as config from "../config.json"
 
-export const TodoContext = createContext();
+export const TodoContext = createContext()
 const Todo = () => {
-    const {
-        get,
-        put,
-        post,
-    } = useFetch();
+	const {
+		get,
+		put,
+		post,
+	} = useFetch()
 
-    const [todos, setTodos] = useState([]);
+	const [todos, setTodos] = useState([])
 
-    const getTodos = async () => {
-        try {
-            const resp = await get(config.url.getTodos);
-            setTodos(() => resp);
-        } catch (err) {
-            setTodos([]);
-            console.log("The error is", err)
-        }
-    }
+	const getTodos = async () => {
+		try {
+			const resp = await get(config.url.getTodos)
+			setTodos(() => resp)
+		} catch (err) {
+			setTodos([])
+			console.log("The error is", err)
+		}
+	}
 
-    const addTodo = (todoItem) => {
-        post(config.url.addTodo, {
-            name: todoItem.name,
-        }).then(() => getTodos()); 
-    }
+	const addTodo = (todoItem) => {
+		post(config.url.addTodo, {
+			name: todoItem.name,
+		}).then(() => getTodos()) 
+	}
 
-    const updateTodo = (id, todoItem) => {
-        put(config.url.updateTodo, {
-            id,
-            name: todoItem.name,
-            isComplete: todoItem.isComplete,
-            isStriked: todoItem.isStriked,
-        }).then(() => {
-            getTodos();
-        })
-    }
+	const updateTodo = (id, todoItem) => {
+		put(config.url.updateTodo, {
+			id,
+			name: todoItem.name,
+			isComplete: todoItem.isComplete,
+			isStriked: todoItem.isStriked,
+		}).then(() => {
+			getTodos()
+		})
+	}
 
 
-    useEffect(() => {
-        getTodos();
-    }, []);
+	useEffect(() => {
+		getTodos()
+	}, [])
 
-    return (
-        <div style={{ display: 'flex', justifyContent: "center", alignItems: "center" }}>
-            <TodoContext.Provider value={{todos, setTodos, getTodos, updateTodo, addTodo }}>
-                <Todos />
-            </TodoContext.Provider>
-        </div>
-    )
+	return (
+		<div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+			<TodoContext.Provider value={{todos, setTodos, getTodos, updateTodo, addTodo }}>
+				<Todos />
+			</TodoContext.Provider>
+		</div>
+	)
 }
 
-export default Todo;
+export default Todo
