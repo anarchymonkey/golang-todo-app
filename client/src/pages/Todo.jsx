@@ -1,58 +1,77 @@
-import React, { createContext, useEffect, useState } from "react"
-import { useFetch } from "../hooks"
-import { Todos } from "../views/Todo"
+import React, { useEffect, useState } from "react"
 
+// hooks
+import { useFetch } from "../hooks"
+
+// others
 import * as config from "../config.json"
 
-export const TodoContext = createContext()
-const Todo = () => {
-	const {
-		get,
-		put,
-		post,
-	} = useFetch()
+// styles
 
-	const [todos, setTodos] = useState([])
+import style from "./todo.module.css"
 
-	const getTodos = async () => {
-		try {
-			const resp = await get(config.url.getTodos)
-			setTodos(() => resp)
-		} catch (err) {
-			setTodos([])
-			console.log("The error is", err)
-		}
-	}
 
-	const addTodo = (todoItem) => {
-		post(config.url.addTodo, {
-			name: todoItem.name,
-		}).then(() => getTodos()) 
-	}
+const Collections = () => {
 
-	const updateTodo = (id, todoItem) => {
-		put(config.url.updateTodo, {
-			id,
-			name: todoItem.name,
-			isComplete: todoItem.isComplete,
-			isStriked: todoItem.isStriked,
-		}).then(() => {
-			getTodos()
-		})
-	}
+	const [groups, setGroups] = useState([])
+	const [items, setItems] = useState([])
 
+	const { get, loading, error } = useFetch()
+
+	console.log(loading, error)
 
 	useEffect(() => {
-		getTodos()
+		get(config.url.getGroups).then(resp => {
+			setGroups(resp)
+		})
 	}, [])
 
+	const onGroupClick = async (group) => {
+		const items = await get(`http://localhost:8080/group/${group.id}/items`);
+		setItems(items)
+	}
+
+	const onItemClick = async (item) => {
+		const resp = await get(`http://localhost:8080/item/${item.id}/contents`)
+		console.log({ resp })
+	}
+
 	return (
-		<div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-			<TodoContext.Provider value={{todos, setTodos, getTodos, updateTodo, addTodo }}>
-				<Todos />
-			</TodoContext.Provider>
+		<div className={style.main}>
+			<div className={style.groups}>
+				<button style={{ margin: "20px 0px" }} className={style.addGroup} type="button">
+					Add group
+				</button>
+				<div className={style.groupListItems}>
+					{!error && groups.map(group => (
+						<section key={group.id} onClick={() => onGroupClick(group)}>{group.title}</section>
+					))}
+				</div>
+			</div>
+			<div className={style.contents}>
+				<div className={style.contentHeader}>
+					<button className={style.addGroup} type="button">
+						Add item
+					</button>
+					<div>
+						<input type="search" placeholder="Search items" />
+					</div>
+				</div>
+				<div className={style.contentItemGrid}>
+					{!error && items?.map(item => (
+						<section key={item.id} onClick={() => onItemClick(item)}>
+							<span className={style.topLeft}>
+								{new Date(item.created_at).toDateString()}
+							</span>
+							<span>
+								{item.content}
+							</span>
+						</section>
+					))}
+				</div>
+			</div>
 		</div>
 	)
 }
 
-export default Todo
+export default Collections

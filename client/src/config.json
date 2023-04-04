@@ -6,8 +6,6 @@
         "mode": "cors"
     },
     "url": {
-        "getTodos": "http://localhost:8080/todos",
-        "addTodo": "http://localhost:8080/todo/add",
-        "updateTodo": "http://localhost:8080/todo/update"
+        "getGroups": "http://localhost:8080/groups"
     }
 }

@@ -1,17 +1,18 @@
 import React from "react"
+import styles from "./header.module.css"
 
-const Header = () => {
+function Header() {
 
 	const goToPage = (pathName) => {
 		console.log("Going to page", pathName)
 	}
 
 	return (
-		<div className="main">
-			<div className="left">
-                Daily Shenanigans
+		<div className={styles.main}>
+			<div className={styles.left}>
+				Daily Shenanigans
 			</div>
-			<div className="right">
+			<div className={styles.right}>
 				<div onClick={() => goToPage("/collections")}>Collections</div>
 				<div onClick={() => goToPage("/about")}>About</div>
 			</div>

@@ -1,0 +1,98 @@
+:root {
+    --flex-column: display:flex;
+    flex-direction: column;
+}
+
+.main {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    color: #000000;
+    position: fixed;
+    left: 0;
+    top: 65px;
+    right: auto;
+    height: 100vh;
+    width: 100%;
+}
+
+.groups {
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    background-color: #D9D9D9;
+    gap: 54px;
+}
+
+.addGroup {
+    align-self: center;
+    background: #6DAC3C;
+    border: 1px solid #54AF4C;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    border-radius: 25px;
+    color: #FFFFFF;
+    width: 137px;
+    height: 27px;
+    cursor: pointer;
+}
+
+.addGroup:active {
+    box-shadow: inset 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.groupListItems>section {
+    margin: 12px 0px;
+    background: #C4C4CD;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    padding: 25px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.groupListItems>section:active {
+    content: '';
+    background: #C4C4CD;
+    box-shadow: inset 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.contents {
+    margin: 80px;
+    width: calc(100% - 340px);
+}
+
+.contentHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.contentItemGrid {
+    display: grid;
+    grid-template-rows: repeat(3, 200px);
+    grid-template-columns: repeat(3, 200px);
+    grid-auto-flow: row;
+    grid-gap: 20px;
+    font-size: 14px;
+}
+
+.contentItemGrid>section {
+    background: #B4E78C;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    border-radius: 25px;
+    margin: 20px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+}
+
+.contentItemGrid>section>span.topLeft {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    font-size: 12px;
+}
