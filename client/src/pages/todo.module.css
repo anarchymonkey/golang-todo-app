@@ -96,3 +96,31 @@
     left: 15px;
     font-size: 12px;
 }
+
+.contentItemGrid>section>.deleteBtn {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    fill: #000;
+    bottom: 15px;
+    right: 25px;
+}
+
+.contentItemGrid>section>.clockIcon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    fill: #000;
+    bottom: 15px;
+    left: 25px;
+}

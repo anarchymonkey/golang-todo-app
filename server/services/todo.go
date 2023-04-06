@@ -331,34 +331,7 @@ func DeleteItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
 		return
 	}
 
-	groupedItemRowDetails, err := tran.Exec(context.Background(), "DELETE from grouped_items where group_id=$1 AND item_id=$2", groupId, itemId)
-
-	if err != nil {
-		tran.Rollback(context.Background())
-		abortWithMessage(c, fmt.Sprintf("error while running a delete query on grouped_items: id %s, with err %v", itemId, err))
-		return
-	}
-
-	itemRowDetails, err := conn.Exec(context.Background(), "DELETE FROM items where id=$1", itemId)
-
-	if err != nil {
-		tran.Rollback(context.Background())
-		abortWithMessage(c, fmt.Sprintf("error while running a delete query on item id %s, with err %v", itemId, err))
-		return
-	}
-
-	fmt.Println("rows affected", itemRowDetails.RowsAffected(), groupedItemRowDetails.RowsAffected())
-
-	err = tran.Commit(context.Background())
-
-	if err != nil {
-		abortWithMessage(c, fmt.Sprintf("error while commiting the transaction %v", err))
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "data deleted successfully",
-	})
+	// delete grouped items
 
 }
 

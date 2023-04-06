@@ -69,12 +69,27 @@ const useFetch = () => {
 		})
 	}, [request])
 
+	const deleteRequest = useCallback(async (url, params = {}, options = {}) => {
+
+		if (!url) {
+			throw new SyntaxError("Url is required but not given")
+		}
+		console.log(params)
+
+		return request(url, {
+			...options,
+			method: "DELETE",
+			body: JSON.stringify(params),
+		})
+	}, [request])
+
 	return {
 		loading,
 		error,
 		get,
 		post,
 		put,
+		deleteRequest,
 	}
 }
 

@@ -6,6 +6,11 @@ import { useFetch } from "../hooks"
 // others
 import * as config from "../config.json"
 
+// icons
+
+import DeleteIcon from "../../public/assets/trash.svg"
+import ClockIcon from "../../public/assets/clockIcon.svg"
+
 // styles
 
 import style from "./todo.module.css"
@@ -15,8 +20,9 @@ const Collections = () => {
 
 	const [groups, setGroups] = useState([])
 	const [items, setItems] = useState([])
+	const [selectedGroup, setSelectedGroup] = useState(null)
 
-	const { get, loading, error } = useFetch()
+	const { get, loading, error, deleteRequest } = useFetch()
 
 	console.log(loading, error)
 
@@ -26,14 +32,28 @@ const Collections = () => {
 		})
 	}, [])
 
+	const fetchItems = async (groupId) => {
+		return get(`http://localhost:8080/group/${groupId}/items`)
+	}
+
+
 	const onGroupClick = async (group) => {
-		const items = await get(`http://localhost:8080/group/${group.id}/items`);
+		setSelectedGroup(group)
+		const items = await fetchItems(group.id)
 		setItems(items)
 	}
 
 	const onItemClick = async (item) => {
 		const resp = await get(`http://localhost:8080/item/${item.id}/contents`)
 		console.log({ resp })
+	}
+
+	const deleteItem = async (groupId, itemId) => {
+		await deleteRequest(`http://localhost:8080/group/${groupId}/item/${itemId}/delete`).then(async (res) => {
+			console.log(res)
+			const items = await fetchItems(groupId)
+			setItems(items)
+		})
 	}
 
 	return (
@@ -66,6 +86,13 @@ const Collections = () => {
 							<span>
 								{item.content}
 							</span>
+							<DeleteIcon className={style.deleteBtn} onClick={() => deleteItem(selectedGroup.id, item.id)} />
+							{item?.remind_at && (
+								<div>
+									<ClockIcon className={style.clockIcon} />
+									{new Date(item?.remind_at)}
+								</div>
+							)}
 						</section>
 					))}
 				</div>
