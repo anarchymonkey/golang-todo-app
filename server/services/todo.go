@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -331,7 +333,79 @@ func DeleteItemInGroup(c *gin.Context, conn *pgxpool.Conn) {
 		return
 	}
 
-	// delete grouped items
+	// delete item_contents
+
+	ids, err := tran.Query(context.Background(), "DELETE from item_contents WHERE item_id=$1 RETURNING content_id as id;", itemId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting item from item_contents: err = %v", err))
+		return
+	}
+
+	var contentIds []string
+
+	for ids.Next() {
+		var content int
+
+		err := ids.Scan(&content)
+
+		if err != nil {
+			tran.Rollback(context.Background())
+			abortWithMessage(c, fmt.Sprintf("error while getting content ids: err = %v", err))
+			return
+		}
+
+		// if there is some content id then only push the id
+		if content != 0 {
+			contentIds = append(contentIds, strconv.Itoa(content))
+		}
+
+	}
+
+	// if content ids are available then only delete otherwise move on to the next step
+	if len(contentIds) != 0 {
+		fmt.Println("content ids", contentIds, fmt.Sprintf("DELETE from contents where id IN (%s)", strings.Join(contentIds, ",")))
+		_, err := tran.Exec(context.Background(), fmt.Sprintf("DELETE from contents where id IN (%s)", strings.Join(contentIds, ",")))
+
+		if err != nil {
+			tran.Rollback(context.Background())
+			abortWithMessage(c, fmt.Sprintf("error while deleting content with ids = %s: err = %v", contentIds, err))
+			return
+		}
+	}
+
+	// delete grouped_items
+
+	_, err = tran.Exec(context.Background(), "DELETE from grouped_items WHERE group_id=$1 AND item_id=$2", groupId, itemId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting grouped_items with group_id=%s and item_id=%s: err=%v", groupId, itemId, err))
+		return
+	}
+
+	// delete items
+
+	_, err = tran.Exec(context.Background(), "DELETE from items WHERE id=$1", itemId)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting items with item_id=%s: err=%v", itemId, err))
+		return
+	}
+
+	err = tran.Commit(context.Background())
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while commiting the transaction: err=%v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "successfully deleted items",
+	})
 
 }
 
