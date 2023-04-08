@@ -14,6 +14,7 @@ import ClockIcon from "../../public/assets/clockIcon.svg"
 // styles
 
 import style from "./todo.module.css"
+import { Modal } from "../views/Shared/Modal"
 
 
 const Collections = () => {
@@ -97,6 +98,9 @@ const Collections = () => {
 					))}
 				</div>
 			</div>
+			<Modal>
+				
+			</Modal>
 		</div>
 	)
 }
