@@ -1,13 +1,18 @@
 import React from "react"
 import { Overlay } from "../Overlay"
 
+import styles from "./styles.module.css"
 
-const Modal = () => {
+
+const Modal = ({
+	// eslint-disable-next-line react/prop-types
+	children
+}) => {
 	return (
 		<Overlay>
-			<div>
+			<div className={styles.container}>
 				<div>
-                    This is a trial
+					{children}
 				</div>
 			</div>
 		</Overlay>

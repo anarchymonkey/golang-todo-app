@@ -99,7 +99,8 @@ const Collections = () => {
 				</div>
 			</div>
 			<Modal>
-				
+				<h1>Hey my name is aniket</h1>
+				<h2>This would be a todo list</h2>
 			</Modal>
 		</div>
 	)
