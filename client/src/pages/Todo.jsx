@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useReducer, useState } from "react"
 
 // hooks
 import { useFetch } from "../hooks"
@@ -17,15 +17,29 @@ import style from "./todo.module.css"
 import { Modal } from "../views/Shared/Modal"
 
 
-const Collections = () => {
+const handleCollectionStates = (state, action) => {
+	console.log(state, action);
+}
 
+
+const Collections = () => {
+	const [state, dispatch] = useReducer(handleCollectionStates, {
+		groups: [],
+		items: [],
+		selectedGroup: {},
+		selectedItem: {},
+		contents: [],
+		selectedContents: [],
+	})
 	const [groups, setGroups] = useState([])
 	const [items, setItems] = useState([])
 	const [selectedGroup, setSelectedGroup] = useState(null)
+	const [selectedItem, setSelectedItem] = useState(null)
+	const [contents, setContents] = useState([])
+	const [selectedContents, setSelectedContents] = useState([])
+	const [content, setContent] = useState("")
 
-	const { get, loading, error, deleteRequest } = useFetch()
-
-	console.log(loading, error)
+	const { get, loading, error, deleteRequest, post } = useFetch()
 
 	useEffect(() => {
 		get(config.url.getGroups).then(resp => {
@@ -37,6 +51,10 @@ const Collections = () => {
 		return get(`http://localhost:8080/group/${groupId}/items`)
 	}
 
+	const fetchContents = async (itemId) => {
+		return get(`http://localhost:8080/item/${itemId}/contents`)
+	}
+
 
 	const onGroupClick = async (group) => {
 		setSelectedGroup(group)
@@ -45,8 +63,10 @@ const Collections = () => {
 	}
 
 	const onItemClick = async (item) => {
-		const resp = await get(`http://localhost:8080/item/${item.id}/contents`)
+		setSelectedItem(item)
+		const resp = await fetchContents(item.id)
 		console.log({ resp })
+		setContents(resp ? resp : [])
 	}
 
 	const deleteItem = async (groupId, itemId) => {
@@ -55,6 +75,20 @@ const Collections = () => {
 			const items = await fetchItems(groupId)
 			setItems(items)
 		})
+	}
+
+	const onContentChange = (event) => {
+		const { value } = event.target
+		setContent(value)
+	}
+
+	const onContentAddClick = async (item) => {
+		console.log({ content })
+		const resp = await post(`http://localhost:8080/item/${item.id}/content/add`, {
+			content,
+		})
+
+		console.log({ addContentResponse: resp })
 	}
 
 	return (
@@ -98,10 +132,21 @@ const Collections = () => {
 					))}
 				</div>
 			</div>
-			<Modal>
-				<h1>Hey my name is aniket</h1>
-				<h2>This would be a todo list</h2>
+			{selectedItem && (<Modal>
+				<div>
+					<input type="text" onChange={onContentChange} value={content} />
+					<button onClick={() => onContentAddClick(selectedItem)}>Add</button>
+				</div>
+				<div>
+					{contents.map(content => (
+						<div key={content.id}>
+							<input type="checkbox" checked={selectedContents.includes(content.id)} />
+							<span>{content.content}</span>
+						</div>
+					))}
+				</div>
 			</Modal>
+			)}
 		</div>
 	)
 }
