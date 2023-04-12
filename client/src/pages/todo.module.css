@@ -124,3 +124,59 @@
     bottom: 15px;
     left: 25px;
 }
+
+.mainContents {
+    background-color: #a1f5a0;
+    padding: 10px 5px;
+    width: 100%;
+    min-height: 50vh;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.mainContents > div > input[type="text"] {
+    background: #91e78f;
+    border: none;
+    height: 40px;
+    width: -webkit-fill-available;
+    font-size: 16px;
+    box-shadow: none;
+}
+
+.mainContents > div > input[type="text"]:active {
+    border: none;
+    content: '';
+    box-shadow: none;
+}
+
+.mainContents > div > input[type="text"]:focus {
+   outline: none;
+}
+
+.mainContents > div > button {
+    background: none;
+    width: 120px;
+    height: 30px;
+    border-radius: 50px;
+    outline: none;
+}
+
+.contentContainer {
+    display: flex;
+    justify-content: start;
+    margin: 10px;
+    gap: 10px;
+}
+
+.todoContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.todoContainer > svg {
+    position: absolute;
+    right: 25px;
+}

@@ -10,6 +10,7 @@ import * as config from "../config.json"
 
 import DeleteIcon from "../../public/assets/trash.svg"
 import ClockIcon from "../../public/assets/clockIcon.svg"
+import EditIcon from "../../public/assets/editIcon.svg"
 
 // styles
 
@@ -18,7 +19,7 @@ import { Modal } from "../views/Shared/Modal"
 
 
 const handleCollectionStates = (state, action) => {
-	console.log(state, action);
+	console.log(state, action)
 }
 
 
@@ -40,6 +41,8 @@ const Collections = () => {
 	const [content, setContent] = useState("")
 
 	const { get, loading, error, deleteRequest, post } = useFetch()
+
+	console.log({ loading })
 
 	useEffect(() => {
 		get(config.url.getGroups).then(resp => {
@@ -89,6 +92,22 @@ const Collections = () => {
 		})
 
 		console.log({ addContentResponse: resp })
+		const contentList = await fetchContents(item.id)
+		setContents(contentList)
+	}
+
+	const onCheckboxChange = (content) => {
+		console.log({ content, selectedContents })
+
+		if (selectedContents.includes(content.id)) {
+			const filteredSelectedContents = selectedContents.filter(
+				contentId => contentId !== content.id)			
+			setSelectedContents(filteredSelectedContents)
+			return
+		}
+
+		setSelectedContents((previouslySelectedContents) => [
+			...previouslySelectedContents, content.id])
 	}
 
 	return (
@@ -133,17 +152,26 @@ const Collections = () => {
 				</div>
 			</div>
 			{selectedItem && (<Modal>
-				<div>
-					<input type="text" onChange={onContentChange} value={content} />
-					<button onClick={() => onContentAddClick(selectedItem)}>Add</button>
-				</div>
-				<div>
-					{contents.map(content => (
-						<div key={content.id}>
-							<input type="checkbox" checked={selectedContents.includes(content.id)} />
-							<span>{content.content}</span>
-						</div>
-					))}
+				<div className={style.mainContents}>
+					<div>
+						<input type="text" onChange={onContentChange} value={content} placeholder="Add content..." />
+						<button onClick={() => onContentAddClick(selectedItem)}>Add</button>
+					</div>
+					<div>
+						{contents.map(content => (
+							<div className={style.todoContainer}  key={content.id}>
+								<div className={style.contentContainer}>
+									<input 
+										type="checkbox" 
+										checked={selectedContents.includes(content.id)} 
+										onChange={() =>onCheckboxChange(content)} 
+									/>
+									<span>{content.content}</span>
+								</div>
+								<EditIcon width={20} height={20} />
+							</div>
+						))}
+					</div>
 				</div>
 			</Modal>
 			)}
