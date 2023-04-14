@@ -153,6 +153,22 @@
    outline: none;
 }
 
+.contentInput {
+    width: 50%;
+    text-overflow: ellipsis;
+    background: inherit;
+    border: none;
+    height: 40px;
+    width: -webkit-fill-available;
+    font-size: 16px;
+    box-shadow: none;
+    resize: both;
+}
+
+.contentInput:focus {
+    outline: none;;
+}
+
 .mainContents > div > button {
     background: none;
     width: 120px;
@@ -166,6 +182,7 @@
     justify-content: start;
     margin: 10px;
     gap: 10px;
+    width: 80%;
 }
 
 .todoContainer {
@@ -176,7 +193,12 @@
     position: relative;
 }
 
-.todoContainer > svg {
-    position: absolute;
-    right: 25px;
+.editBtn {
+    width: 20px;
+    height: 20px;
+}
+
+.contentDelBtn {
+   width: 20px;
+   height: 20px;
 }

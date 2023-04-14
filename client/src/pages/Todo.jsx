@@ -22,6 +22,17 @@ const handleCollectionStates = (state, action) => {
 	console.log(state, action)
 }
 
+const debounce = (fn, delay) => {
+	let timer
+	
+	return function () {
+		clearTimeout(timer)
+		timer = setTimeout(() => {
+			fn(...arguments)
+		}, delay)
+	}
+}
+
 
 const Collections = () => {
 	const [state, dispatch] = useReducer(handleCollectionStates, {
@@ -39,10 +50,9 @@ const Collections = () => {
 	const [contents, setContents] = useState([])
 	const [selectedContents, setSelectedContents] = useState([])
 	const [content, setContent] = useState("")
+	const [editableContents, setEditableContents] = useState(new Map())
 
-	const { get, loading, error, deleteRequest, post } = useFetch()
-
-	console.log({ loading })
+	const { get, loading, error, deleteRequest, post, put } = useFetch()
 
 	useEffect(() => {
 		get(config.url.getGroups).then(resp => {
@@ -69,7 +79,21 @@ const Collections = () => {
 		setSelectedItem(item)
 		const resp = await fetchContents(item.id)
 		console.log({ resp })
-		setContents(resp ? resp : [])
+		if (resp?.length === 0) {
+			setContents([])
+			setEditableContents(new Map())
+			return
+		}
+		setEditableContents(() => new Map(resp?.map(res => [res.id, {
+			id: res.id,
+			originalValue: res.content,
+			updatedValue: res.content,
+			error: {
+				isError: false,
+				message: "",
+			}
+		}])))
+		setContents(resp)
 	}
 
 	const deleteItem = async (groupId, itemId) => {
@@ -85,15 +109,62 @@ const Collections = () => {
 		setContent(value)
 	}
 
+	const onContentEdit = async (ev, content) => {
+		console.log({ upVal: editableContents, ev: ev, content })
+		const { value } = ev.target
+		if (editableContents.get(content.id).originalValue === value) {
+			const updatedContents = new Map(editableContents)
+			updatedContents.set(content.id, {
+				...editableContents.get(content.id),
+				updatedValue: value,
+			})
+			setEditableContents(updatedContents)
+			return
+		}
+
+		const updatedContents = new Map(editableContents)
+		updatedContents.set(content.id, {
+			...editableContents.get(content.id),
+			updatedValue: value,
+		})
+		setEditableContents(updatedContents)
+
+		const debouncedFn = debounce(async () => {
+			const resp = await put(`http://localhost:8080/content/${content.id}/update`, {
+				content: value,
+			})
+	
+			console.log({ resp })
+		}, 1500)
+	
+		debouncedFn()
+	}
+
 	const onContentAddClick = async (item) => {
 		console.log({ content })
 		const resp = await post(`http://localhost:8080/item/${item.id}/content/add`, {
 			content,
 		})
 
-		console.log({ addContentResponse: resp })
-		const contentList = await fetchContents(item.id)
-		setContents(contentList)
+		console.log({ respAdd: resp })
+
+		const contents = await fetchContents(item.id)
+
+		if (contents?.length === 0) {
+			setContents([])
+			setEditableContents(new Map())
+			return
+		}
+		setEditableContents(() => new Map(contents?.map(content => [content.id, {
+			id: content.id,
+			originalValue: content.content,
+			updatedValue: content.content,
+			error: {
+				isError: false,
+				message: "",
+			}
+		}])))
+		setContents(contents)
 	}
 
 	const onCheckboxChange = (content) => {
@@ -101,13 +172,20 @@ const Collections = () => {
 
 		if (selectedContents.includes(content.id)) {
 			const filteredSelectedContents = selectedContents.filter(
-				contentId => contentId !== content.id)			
+				contentId => contentId !== content.id)
 			setSelectedContents(filteredSelectedContents)
 			return
 		}
 
 		setSelectedContents((previouslySelectedContents) => [
 			...previouslySelectedContents, content.id])
+	}
+
+	const onDeleteContent = async (content) => {
+		await deleteRequest(`http://localhost:8080/item/${selectedItem.id}/content/${content.id}/delete`).then(async (res) => {
+			const contents = await fetchContents(selectedItem.id)
+			setContents(contents)
+		})
 	}
 
 	return (
@@ -117,7 +195,7 @@ const Collections = () => {
 					Add group
 				</button>
 				<div className={style.groupListItems}>
-					{!error && groups.map(group => (
+					{!error && groups?.map(group => (
 						<section key={group.id} onClick={() => onGroupClick(group)}>{group.title}</section>
 					))}
 				</div>
@@ -158,17 +236,23 @@ const Collections = () => {
 						<button onClick={() => onContentAddClick(selectedItem)}>Add</button>
 					</div>
 					<div>
-						{contents.map(content => (
-							<div className={style.todoContainer}  key={content.id}>
+						{contents?.map(content => (
+							<div className={style.todoContainer} key={content.id}>
 								<div className={style.contentContainer}>
-									<input 
-										type="checkbox" 
-										checked={selectedContents.includes(content.id)} 
-										onChange={() =>onCheckboxChange(content)} 
+									<input
+										type="checkbox"
+										checked={selectedContents.includes(content.id)}
+										onChange={() => onCheckboxChange(content)}
 									/>
-									<span>{content.content}</span>
+									<textarea
+										onChange={(ev) => onContentEdit(ev, content)}
+										value={editableContents.get(content.id).updatedValue}
+										className={style.contentInput}
+									/>
 								</div>
-								<EditIcon width={20} height={20} />
+								<div>
+									<DeleteIcon className={style.contentDelBtn} onClick={() => onDeleteContent(content)} />
+								</div>
 							</div>
 						))}
 					</div>
