@@ -5,7 +5,7 @@
     font-family: 'Poppins' sans-serif;
     display: flex;
     flex: 1;
-    width: 100%;
+    width: calc(100% - 90px);
     height: 65px;
     min-width: 90vw;
     justify-content: space-between;
