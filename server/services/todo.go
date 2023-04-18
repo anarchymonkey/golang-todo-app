@@ -139,30 +139,113 @@ func UpdateGroupById(c *gin.Context, conn *pgxpool.Conn) {
 
 func DeleteGroupById(c *gin.Context, conn *pgxpool.Conn) {
 
-	// does not need group id, item id would suffice
-
 	idToDelete, ok := c.Params.Get("id")
 
 	if !ok {
-		abortWithMessage(c, "item id is required but not present!")
+		abortWithMessage(c, "id not present")
 		return
 	}
 
-	row, err := conn.Exec(context.Background(), "DELETE from groups where id=$1", idToDelete)
+	tran, err := conn.Begin(context.Background())
 
 	if err != nil {
-		abortWithMessage(c, fmt.Sprintf("error while running the delete query %v", err))
+		abortWithMessage(c, fmt.Sprintf("Error while begining a transaction %v", err))
+		return
 	}
 
-	if row.RowsAffected() == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Cannot be deleted at the moment!",
-		})
+	// delete group in grouped items and return the item ids
+
+	ids, err := tran.Query(context.Background(), "DELETE from grouped_items where group_id=$1 RETURNING item_id", idToDelete)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting grouped_items: %v", err))
+		return
+	}
+
+	var itemIds []string
+
+	for ids.Next() {
+		var item int
+
+		err := ids.Scan(&item)
+
+		if err != nil {
+			tran.Rollback(context.Background())
+			abortWithMessage(c, fmt.Sprintf("error while scanning rows: %v", err))
+			defer ids.Close()
+			return
+		}
+
+		itemIds = append(itemIds, strconv.Itoa(item))
+	}
+
+	// delete group id
+
+	_, err = tran.Exec(context.Background(), "DELETE from groups where id=$1", idToDelete)
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting group: %v", err))
+		return
+
+	}
+
+	// delete items and contents from item_contents where item_id in item_ids
+
+	fmt.Println("The item ids", itemIds)
+
+	ids, err = tran.Query(context.Background(), fmt.Sprintf("DELETE from item_contents where item_id IN (%s) RETURNING content_id", strings.Join(itemIds, ",")))
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting item contents: %v", err))
+		return
+	}
+
+	var contentIds []string
+	for ids.Next() {
+		var contentId int
+
+		err := ids.Scan(&contentId)
+
+		if err != nil {
+			defer ids.Close()
+			tran.Rollback(context.Background())
+			return
+		}
+		contentIds = append(contentIds, strconv.Itoa(contentId))
+	}
+
+	// delete itemIds from items
+
+	_, err = tran.Exec(context.Background(), fmt.Sprintf("DELETE from items where id IN (%s)", strings.Join(itemIds, ",")))
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting items: %v", err))
+		return
+	}
+
+	// delete contents
+
+	_, err = tran.Exec(context.Background(), fmt.Sprintf("DELETE from contents where id IN (%s)", strings.Join(contentIds, ",")))
+
+	if err != nil {
+		tran.Rollback(context.Background())
+		abortWithMessage(c, fmt.Sprintf("error while deleting items: %v", err))
+		return
+	}
+
+	err = tran.Commit(context.Background())
+
+	if err != nil {
+		tran.Rollback(context.Background())
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "The group has been deleted",
+		"message": "group and it's items deleted successfully",
 	})
 }
 
