@@ -62,7 +62,6 @@ func main() {
 
 	// can refactor with router.group later on
 
-	// GET
 	router.GET("/groups", getHandlerWithBindedEnvironment(services.GetGroups, env))
 	router.GET("/group/:id/items", getHandlerWithBindedEnvironment(services.GetItemsInGroup, env))
 	router.GET("/item/:id/contents", getHandlerWithBindedEnvironment(services.GetContentsInItems, env))
